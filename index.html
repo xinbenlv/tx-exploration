@@ -40,10 +40,9 @@
             },
             methods: {
                 async fetchTransactions() {
-                    const address = "0x7B6bEf228F123741446DcFEf030a2E4cee519144";
-                    // get apiKey from url paramter
                     const urlParams = new URLSearchParams(window.location.search);
                     const apiKey = urlParams.get('apiKey');
+                    const address = urlParams.get('address');
                     const url = `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`;
 
                     const response = await fetch(url);
