@@ -28,6 +28,8 @@
             el: '#app',
             data: {
                 transactions: [],
+                apiKey: '',
+                address: '',
                 columns: [
                     {
                         title: 'Hash',
@@ -44,8 +46,8 @@
             methods: {
                 async fetchTransactions() {
                     const urlParams = new URLSearchParams(window.location.search);
-                    const apiKey = urlParams.get('apiKey');
-                    const address = urlParams.get('address');
+                    this.apiKey = urlParams.get('apiKey');
+                    this.address = urlParams.get('address');
                     const url = `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`;
 
                     const response = await fetch(url);
