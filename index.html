@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue App</title>
+    <link href="https://unpkg.com/ant-design-vue@1.7.2/dist/antd.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@2.6.12/dist/vue.js"></script>
+    <script src="https://unpkg.com/ant-design-vue@1.7.2/dist/antd.js"></script>
+</head>
+<body>
+    <div id="app">
+        <a-button type="primary" @click="fetchTransactions">Fetch Transactions</a-button>
+        <a-table :columns="columns" :data-source="transactions" :row-key="record => record.hash" bordered>
+            <template slot="hash" slot-scope="text, record">
+                <a :href="`https://etherscan.io/tx/${record.hash}`" target="_blank">{{text}}</a>
+            </template>
+        </a-table>
+        <p v-if="transactions.length === 0">No transactions found.</p>
+        <p v-else>{{transactions.length}} tx found.</p>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                transactions: [],
+                columns: [
+                    {
+                        title: 'Hash',
+                        dataIndex: 'hash',
+                        key: 'hash'
+                    },
+                    {
+                        title: 'Gas Used',
+                        dataIndex: 'gasUsed',
+                        key: 'gasused',
+                    },
+                ]
+            },
+            methods: {
+                async fetchTransactions() {
+                    const address = "0x7B6bEf228F123741446DcFEf030a2E4cee519144";
+                    // get apiKey from url paramter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const apiKey = urlParams.get('apiKey');
+                    const url = `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`;
+
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    this.transactions = [...data.result.map(tx => ({
+                            key: tx.hash,
+                            ...tx
+                        }))
+                    ];
+                    console.log(`this.transactions`, this.transactions);
+                    let totalGasUsed = 0;
+                    this.transactions.forEach(tx => {
+                        totalGasUsed += parseInt(tx.gasUsed);
+                    });
+                    console.log(`totalGasUsed`, totalGasUsed);
+                    let gasPrice = "17"; // gwei
+                    let ethereumPrice = "2400"; // usd
+                    let totalGasUsedInEther = totalGasUsed * parseInt(gasPrice) / 1000000000;
+                    console.log(`totalGasUsedInEther`, totalGasUsedInEther, "ether");
+                    let totalGasUsedInUsd = totalGasUsedInEther * parseInt(ethereumPrice);
+                    console.log(`totalGasUsedInUsd`, totalGasUsedInUsd, "usd");
+                },
+            },
+        });
+    </script>
+</body>
+</html>
