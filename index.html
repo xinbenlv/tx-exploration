@@ -13,16 +13,19 @@
         <h1>A simple TX explorer <a href="https://github.com/xinbenlv/tx-exploration" target="_blank">
             <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo" width="50" height="50">
         </a></h1>
-        
-
-
-
         <p>API Key = {{apiKey}}</p>
-        <p>Address = {{address}}</p>
+        <label for="address">Address of Interaction</label>
+        <a-input v-model="address" placeholder="Address of Interaction"></a-input>
         <a-button type="primary" @click="fetchTransactions">Fetch Transactions</a-button>
+        <br/>
+        <!-- label for gasPrice -->
+        <label for="gasPrice">Gas Price (gwei)</label>
+        <a-input-number v-model="gasPrice" step="1" @change="updatePrice"></a-input-number>
+        <br/>
+        <label for="ethereumPriceInUsed">Eth Price (USD)</label>
+        <a-input-number v-model="ethereumPriceInUsed" step="1" @change="updatePrice"></a-input-number>
+        <br/>
         <p>Total Gas Used = {{totalGasUsed}}</p>
-        <p>Gas Price = {{gasPrice}} gwei</p>
-        <p>Ethereum Price = {{ethereumPriceInUsed}} usd</p>
         <p>Total Gas Used In Ether = {{totalGasUsedInEther}} ether</p>
         <p>Total Gas Used In Usd = {{totalGasUsedInUsd}} usd</p>
 
@@ -56,8 +59,8 @@
                 transactions: [],
                 apiKey: 'no key',
                 address: 'no key',
-                gasPrice: 0,
-                ethereumPriceInUsed: 0,
+                gasPrice: 17.0,
+                ethereumPriceInUsed: 2400.0,
                 totalGasUsed: 0,
                 totalGasUsedInEther: 0,
                 totalGasUsedInUsd: 0,
@@ -93,42 +96,50 @@
             },
             async created() {
                 const urlParams = new URLSearchParams(window.location.search);
-                    this.apiKey = urlParams.get('apiKey');
-                    this.address = urlParams.get('address');
-                    await this.fetchTransactions();
+                this.apiKey = urlParams.get('apiKey');
+                this.address = urlParams.get('address');
+                await this.fetchTransactions();
             },
+            
             methods: {
                 onShowSizeChange(current, pageSize) {
                     console.log(current, pageSize);
                 },
-                async fetchTransactions() {
-
-                    console.log(`this.apiKey`, this.apiKey);
-                    console.log(`this.address`, this.address);
-                    const url = `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${this.address}&startblock=0&endblock=99999999&sort=asc&apikey=${this.apiKey}`;
-
-                    const response = await fetch(url);
-                    const data = await response.json();
+                updatePrice() {
+                    this.updateTransactions();
+                    this.calculateTotalGasCosts();
+                },
+                calculateTotalGasCosts() {
                     this.totalGasUsed = 0;
                     this.transactions.forEach(tx => {
                         this.totalGasUsed += parseInt(tx.gasUsed);
                     });
-                    console.log(`totalGasUsed`, this.totalGasUsed);
-                    this.gasPrice = "17"; // gwei
-                    this.ethereumPriceInUsed = "2400"; // usd
-                    this.totalGasUsedInEther = this.totalGasUsed * parseInt(this.gasPrice) / 1000000000;
-                    console.log(`totalGasUsedInEther`, this.totalGasUsedInEther, "ether");
-                    this.totalGasUsedInUsd = this.totalGasUsedInEther * parseInt(this.ethereumPriceInUsed);
-                    console.log(`totalGasUsedInUsd`, this.totalGasUsedInUsd, "usd");
-                    this.transactions = [...data.result.map(tx => ({
+                     console.log(`totalGasUsed`, this.totalGasUsed);
+                     this.totalGasUsedInEther = this.totalGasUsed * parseInt(this.gasPrice) / 1000000000;
+                     console.log(`totalGasUsedInEther`, this.totalGasUsedInEther, "ether");
+                     this.totalGasUsedInUsd = this.totalGasUsedInEther * parseInt(this.ethereumPriceInUsed);
+                     console.log(`totalGasUsedInUsd`, this.totalGasUsedInUsd, "usd");
+  
+                },
+                updateTransactions() {
+                    this.transactions = this.transactions.map(tx => ({
+                            ...tx,
                             key: tx.hash,
-                            gasFeeEth: parseInt(tx.gasUsed) * parseInt(this.gasPrice ) / 1000000000,
-                            gasFeeUsd: parseInt(tx.gasUsed) * parseInt(this.gasPrice) / 1000000000 * parseInt(this.ethereumPriceInUsed),
-                            ...tx
+                            gasFeeEth: parseInt(tx.gasUsed) * this.gasPrice / 1000000000,
+                            gasFeeUsd: parseInt(tx.gasUsed) * this.gasPrice / 1000000000 * this.ethereumPriceInUsed,
+               
                         }))
-                    ];
+                    ;
                     console.log(`this.transactions`, this.transactions);
-                  
+                },
+                async fetchTransactions() {
+                    console.log(`this.apiKey`, this.apiKey);
+                    console.log(`this.address`, this.address);
+                    const url = `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${this.address}&startblock=0&endblock=99999999&sort=asc&apikey=${this.apiKey}`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    this.transactions = data.result;
+                    this.updatePrice();
                 },
             },
         });
