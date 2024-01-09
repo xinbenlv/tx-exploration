@@ -10,6 +10,9 @@
 </head>
 <body>
     <div id="app">
+        <h1>Get the TX information</h1>
+        <p>API Key = {{apiKey}}</p>
+        <p>Address = {{address}}</p>
         <a-button type="primary" @click="fetchTransactions">Fetch Transactions</a-button>
         <a-table :columns="columns" :data-source="transactions" :row-key="record => record.hash" bordered>
             <template slot="hash" slot-scope="text, record">
