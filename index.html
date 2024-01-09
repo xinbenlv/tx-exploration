@@ -14,11 +14,6 @@
         <p>API Key = {{apiKey}}</p>
         <p>Address = {{address}}</p>
         <a-button type="primary" @click="fetchTransactions">Fetch Transactions</a-button>
-        <a-table :columns="columns" :data-source="transactions" :row-key="record => record.hash" bordered>
-            <template slot="hash" slot-scope="text, record">
-                <a :href="`https://etherscan.io/tx/${record.hash}`" target="_blank">{{text}}</a>
-            </template>
-        </a-table>
         <p>Total Gas Used = {{totalGasUsed}}</p>
         <p>Gas Price = {{gasPrice}} gwei</p>
         <p>Ethereum Price = {{ethereumPriceInUsed}} usd</p>
@@ -27,6 +22,25 @@
 
         <p v-if="transactions.length === 0">No transactions found.</p>
         <p v-else>{{transactions.length}} tx found.</p>
+        <h1>Data</h1>
+        <a-table 
+            :columns="columns"
+            :data-source="transactions"
+            :row-key="record => record.hash"
+            :pagination="{
+                total: transactions.length,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '25', '30', '50', '100', '500'],
+                onShowSizeChange: onShowSizeChange,
+                pageSize: pageSize,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                
+            }"
+            bordered>
+                <a slot="tx" slot-scope="text, record" :href="'https://sepolia.etherscan.io/tx/' + record.hash" target="_blank">{{text.slice(0,6)}}...</a>
+        </a-table>
+        <!-- table summary -->
+        
     </div>
 
     <script>
@@ -41,25 +55,46 @@
                 totalGasUsed: 0,
                 totalGasUsedInEther: 0,
                 totalGasUsedInUsd: 0,
+                pageSize: 25,
                 columns: [
                     {
                         title: 'Hash',
                         dataIndex: 'hash',
-                        key: 'hash'
+                        key: 'hash',
+                        sorter: (a, b) => a.hash - b.hash,
+                        slots: { title: 'tx' },
+                        scopedSlots: { customRender: 'tx' },
                     },
                     {
                         title: 'Gas Used',
                         dataIndex: 'gasUsed',
                         key: 'gasused',
+                        sorter: (a, b) => a.gasUsed - b.gasUsed,
+                    },
+                    {
+                        title: 'est. Gas Fee in Eth',
+                        dataIndex: 'gasFeeEth',
+                        key: 'gasFeeEth',
+                        sorter: (a, b) => a.gasFeeEth - b.gasFeeEth,
+                    },
+                    {
+                        title: 'est. Gas Fee in Usd',
+                        dataIndex: 'gasFeeUsd',
+                        key: 'gasFeeUsd',
+                        sorter: (a, b) => a.gasFeeUsd - b.gasFeeUsd,
                     },
                 ]
             },
-            created() {
+            async created() {
                 const urlParams = new URLSearchParams(window.location.search);
                     this.apiKey = urlParams.get('apiKey');
                     this.address = urlParams.get('address');
+                    await this.fetchTransactions();
             },
             methods: {
+                onShowSizeChange(current, pageSize) {
+                    console.log(current, pageSize);
+                },
                 async fetchTransactions() {
 
                     console.log(`this.apiKey`, this.apiKey);
@@ -68,13 +103,6 @@
 
                     const response = await fetch(url);
                     const data = await response.json();
-
-                    this.transactions = [...data.result.map(tx => ({
-                            key: tx.hash,
-                            ...tx
-                        }))
-                    ];
-                    console.log(`this.transactions`, this.transactions);
                     this.totalGasUsed = 0;
                     this.transactions.forEach(tx => {
                         this.totalGasUsed += parseInt(tx.gasUsed);
@@ -86,6 +114,15 @@
                     console.log(`totalGasUsedInEther`, this.totalGasUsedInEther, "ether");
                     this.totalGasUsedInUsd = this.totalGasUsedInEther * parseInt(this.ethereumPriceInUsed);
                     console.log(`totalGasUsedInUsd`, this.totalGasUsedInUsd, "usd");
+                    this.transactions = [...data.result.map(tx => ({
+                            key: tx.hash,
+                            gasFeeEth: parseInt(tx.gasUsed) * parseInt(this.gasPrice ) / 1000000000,
+                            gasFeeUsd: parseInt(tx.gasUsed) * parseInt(this.gasPrice) / 1000000000 * parseInt(this.ethereumPriceInUsed),
+                            ...tx
+                        }))
+                    ];
+                    console.log(`this.transactions`, this.transactions);
+                  
                 },
             },
         });
