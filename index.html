@@ -19,6 +19,12 @@
                 <a :href="`https://etherscan.io/tx/${record.hash}`" target="_blank">{{text}}</a>
             </template>
         </a-table>
+        <p>Total Gas Used = {{totalGasUsed}}</p>
+        <p>Gas Price = {{gasPrice}} gwei</p>
+        <p>Ethereum Price = {{ethereumPriceInUsed}} usd</p>
+        <p>Total Gas Used In Ether = {{totalGasUsedInEther}} ether</p>
+        <p>Total Gas Used In Usd = {{totalGasUsedInUsd}} usd</p>
+
         <p v-if="transactions.length === 0">No transactions found.</p>
         <p v-else>{{transactions.length}} tx found.</p>
     </div>
@@ -30,6 +36,11 @@
                 transactions: [],
                 apiKey: 'no key',
                 address: 'no key',
+                gasPrice: 0,
+                ethereumPriceInUsed: 0,
+                totalGasUsed: 0,
+                totalGasUsedInEther: 0,
+                totalGasUsedInUsd: 0,
                 columns: [
                     {
                         title: 'Hash',
@@ -64,17 +75,17 @@
                         }))
                     ];
                     console.log(`this.transactions`, this.transactions);
-                    let totalGasUsed = 0;
+                    this.totalGasUsed = 0;
                     this.transactions.forEach(tx => {
-                        totalGasUsed += parseInt(tx.gasUsed);
+                        this.totalGasUsed += parseInt(tx.gasUsed);
                     });
-                    console.log(`totalGasUsed`, totalGasUsed);
-                    let gasPrice = "17"; // gwei
-                    let ethereumPrice = "2400"; // usd
-                    let totalGasUsedInEther = totalGasUsed * parseInt(gasPrice) / 1000000000;
-                    console.log(`totalGasUsedInEther`, totalGasUsedInEther, "ether");
-                    let totalGasUsedInUsd = totalGasUsedInEther * parseInt(ethereumPrice);
-                    console.log(`totalGasUsedInUsd`, totalGasUsedInUsd, "usd");
+                    console.log(`totalGasUsed`, this.totalGasUsed);
+                    this.gasPrice = "17"; // gwei
+                    this.ethereumPriceInUsed = "2400"; // usd
+                    this.totalGasUsedInEther = this.totalGasUsed * parseInt(this.gasPrice) / 1000000000;
+                    console.log(`totalGasUsedInEther`, this.totalGasUsedInEther, "ether");
+                    this.totalGasUsedInUsd = this.totalGasUsedInEther * parseInt(this.ethereumPriceInUsed);
+                    console.log(`totalGasUsedInUsd`, this.totalGasUsedInUsd, "usd");
                 },
             },
         });
